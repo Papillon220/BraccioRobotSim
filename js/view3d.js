@@ -5,7 +5,7 @@
   const C = BS.config;
 
   const V = (BS.view = {
-    show: { frames: false, trace: true, ghost: false, wsPlane: false, wsHull: false, zones: true, markers: false, tcp: true, path: true, labels: true },
+    show: { frames: false, trace: false, ghost: false, wsPlane: false, wsHull: false, zones: false, markers: false, tcp: false, path: false, labels: false }, // beim Start alles aus
     selected: null,
     ghostPose: null,
     ghostReason: '',
