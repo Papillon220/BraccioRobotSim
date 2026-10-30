@@ -86,10 +86,15 @@
       );
     },
     enter() {
-      if (BS.sim.scenario !== 'cosim') {
-        BS.sim.loadScenario('cosim');
-        BS.store.set('scenario', 'cosim');
+      // Labor-Szenario als Ausgangsbild; sobald Simulink sendet, zeigt BraccioSim die Szene aus dem Modell
+      if (!BS.cosim.live && BS.sim.scenario !== 'labor2') {
+        BS.sim.loadScenario('labor2');
+        BS.store.set('scenario', 'labor2');
       }
+      BS.cosim.camRule();
+    },
+    leave() {
+      BS.cosim.camRule();
     },
     update() {
       const CS = BS.cosim,

@@ -158,12 +158,12 @@
     BS.emit('cosim');
   }
 
-  // Szenario Co-Simulation: ohne Greiferkamera und ohne Bild im Bild (wie in Unreal); beim Verlassen wiederherstellen.
+  // Reiter bzw. Szenario Co-Simulation: ohne Greiferkamera und ohne Bild im Bild (wie in Unreal); danach wiederherstellen.
   // Nicht gespeichert – die eigene Einstellung bleibt erhalten.
   let camSaved = null;
-  BS.on('scenario', () => {
+  CS.camRule = function () {
     const V = BS.view,
-      on = BS.sim.scenario === 'cosim';
+      on = BS.ui.active === 'cosim' || BS.sim.scenario === 'cosim';
     if (on && !camSaved) {
       camSaved = { gripCam: V.gripCam, pip: V.pip };
       V.gripCam = false;
@@ -175,7 +175,8 @@
       camSaved = null;
     } else return;
     BS.emit('pip');
-  });
+  };
+  BS.on('scenario', CS.camRule);
 
   // Simulation pausiert oder hängt: nach TIMEOUT ohne Daten die Bedienung wieder freigeben
   setInterval(() => {
