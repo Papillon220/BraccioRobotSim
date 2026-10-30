@@ -1,6 +1,6 @@
 # BraccioSim
 
-3D-Simulation des Roboterarms Arduino/TinkerKit **Braccio** im Browser – Version **V1.3**.
+3D-Simulation des Roboterarms Arduino/TinkerKit **Braccio** im Browser – Version **V1.4**.
 Gestaltung angelehnt an MobileRobotSim (Prof. Dr.-Ing. Frank Bender, DHBW Stuttgart).
 
 ## Starten

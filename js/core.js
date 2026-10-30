@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const BS = (window.BS = window.BS || {});
-  BS.VERSION = 'V1.3'; // Programmversion (Kopfzeile und Demo-Banner werden beim Start daraus gesetzt)
+  BS.VERSION = 'V1.4'; // Programmversion (Kopfzeile und Demo-Banner werden beim Start daraus gesetzt)
   // Datum der letzten Änderung: jüngster Zeitstempel von Seite, Skripten und Stylesheets (Server-Header „Last-Modified“);
   // ohne Webserver (file://) gilt das Änderungsdatum der HTML-Datei
   BS.showLastModified = function () {
