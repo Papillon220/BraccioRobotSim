@@ -29,6 +29,7 @@
     // Bewegungsführung: 'manual' | 'traj' (Trajektorie, Replay, Automatik)
     owner: 'manual',
     directMask: null, // Gelenke, die ohne Servo-Modell direkt dem Sollwert folgen
+    external: null, // Co-Simulation: Servowinkel M1…M6 von außen (ersetzt Servo-Modell und Fertigungsfehler)
     preStep: [], // Rückrufe vor jedem Simulationsschritt (dt)
     play: null, // laufende Trajektorie {plan, t0, loop, label}
     vScale: 1,
@@ -117,7 +118,7 @@
   sim.canManual = () => sim.owner === 'manual' || sim.owner === 'traj-manual';
   /** Roboter wird von einem Programm geführt (derzeit keine solche Quelle; Trajektorien lassen sich jederzeit übersteuern) */
   sim.locked = () => sim.owner === 'program';
-  sim.lockMsg = () => 'Programm läuft – bitte zuerst stoppen';
+  sim.lockMsg = () => (BS.cosim && BS.cosim.live ? 'Co-Simulation aktiv – Simulink führt den Roboter' : 'Programm läuft – bitte zuerst stoppen');
 
   sim.setCmd = function (i, v) {
     sim.cmd[i] = v;
@@ -255,12 +256,16 @@
         sim.playT = tl;
       }
     }
-    // 2) Servos
+    // 2) Servos (bei Co-Simulation: Ist-Winkel kommen von außen, ohne Servo-Modell)
     const vmax = C.servo.vmax,
       tau = C.servo.tau;
     let gripLimit = Infinity;
     if (sim.held) gripLimit = sim.angleFromJaw(sim.held.gripW);
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 6 && sim.external; i++) {
+      sim.vel[i] = (sim.external[i] - sim.act[i]) / dt;
+      sim.act[i] = sim.cmd[i] = sim.external[i];
+    }
+    for (let i = 0; i < 6 && !sim.external; i++) {
       const target = sim.servoTarget(i);
       const e = target - sim.act[i];
       const vm = vmax[i] * sim.vScale;
@@ -273,7 +278,7 @@
       sim.act[i] = next;
     }
     // 3) Kinematik
-    const qt = sim.trueAngles();
+    const qt = sim.external ? sim.act : sim.trueAngles();
     sim.F = kin.frames(qt);
     const tcp = pos(sim.F[5]);
     if (lastTcp) {
@@ -308,7 +313,7 @@
     }
   }
   sim.updateKinematics = function () {
-    sim.F = kin.frames(sim.trueAngles());
+    sim.F = kin.frames(sim.external ? sim.act : sim.trueAngles());
   };
 
   // ------------------------------------------------------------------
@@ -608,6 +613,7 @@
   sim.scenarios = {
     leer: { name: 'Leerer Tisch', desc: 'Tisch ohne Objekte – zum freien Verfahren.' },
     labor2: { name: 'Labor-Szenario (Übung 2)', desc: 'Szene der Laborübung 2: Plattform, Pick-up-Marker mit zwei Würfeln, Hochregal, Sortierbox und virtuelle Wand.' },
+    cosim: { name: 'Co-Simulation (Simulink)', desc: 'Szene aus dem Simulink-Modell: Roboter und Akteure der Blöcke Web Robot und Web Actor (Reiter Co-Simulation).' },
     farbsort: { name: 'Farb-Sortierung', desc: 'Würfel in Rot, Gelb, Grün und Blau. Der Farbsensor am Greifer erkennt die Farbe; je Farbe ist einstellbar, in welchen Auffangbehälter der Würfel kommt.' },
     band: { name: 'Förderband', desc: 'Radial auf den Roboter zulaufendes Förderband mit Lichtschranke; Würfel in vier Farben werden nach Farbe in die Behälter links und rechts sortiert.' },
     einzel: { name: 'Einzelner Würfel', desc: 'Ein Würfel und ein Zielbereich – einfache Pick-and-Place-Aufgabe.' },

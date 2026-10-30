@@ -36,16 +36,19 @@
     pickupMarker1: { c: [0.25, 0, -0.005], s: [0.025, 0.025, 0.02], color: 0x5c636e },
     pickupMarker2: { c: [0.35, 0, -0.005], s: [0.025, 0.025, 0.02], color: 0x5c636e },
     regal: { c: [0.4, 0, 0.05], s: [0.04, 0.06, 0.1], color: 0x8d6e63 },
-    box1_floor: { c: [0, 0.2, -0.015], s: [0.1, 0.1, 0.005], color: 0xd9c7a8 },
+    box1_floor: { c: [0, 0.225, -0.015], s: [0.1, 0.15, 0.005], color: 0xd9c7a8 },
     box1_wall1: { c: [0, 0.15, 0.03], s: [0.1, 0.005, 0.1], color: 0xd9c7a8 },
-    box1_wall2: { c: [0, 0.25, 0.03], s: [0.1, 0.005, 0.1], color: 0xd9c7a8 },
-    box1_wall3: { c: [0.05, 0.2, 0.03], s: [0.005, 0.1, 0.1], color: 0xd9c7a8 },
-    box1_wall4: { c: [-0.05, 0.2, 0.03], s: [0.005, 0.1, 0.1], color: 0xd9c7a8 },
+    box1_wall2: { c: [0, 0.3, 0.03], s: [0.1, 0.005, 0.1], color: 0xd9c7a8 },
+    box1_wall3: { c: [0.05, 0.225, 0.03], s: [0.005, 0.15, 0.1], color: 0xd9c7a8 },
+    box1_wall4: { c: [-0.05, 0.225, 0.03], s: [0.005, 0.15, 0.1], color: 0xd9c7a8 },
   }; // prettier-ignore
+  // Würfel 25 mm, Farben wie braccioCubes.initColor (cube1 blau, cube2 grün)
+  const CUBE = 25;
   const CUBES = {
-    cube1: { c: [0.25, 0, 0.015], color: '#e03131', name: 'Würfel 1' },
-    cube2: { c: [0.35, 0, 0.015], color: '#1c7ed6', name: 'Würfel 2' },
+    cube1: { c: [0.25, 0, 0.0175], color: '#1c7ed6', name: 'Würfel 1' },
+    cube2: { c: [0.35, 0, 0.0175], color: '#2f9e44', name: 'Würfel 2' },
   };
+  S.CUBES = CUBES;
   const HOME_Q = [0, 90, 0, 90, 0]; // Grad, Default-Pose der Übung (alle φ = 0)
 
   const simBox = (b) => ({ c: toSim(b.c), s: [b.s[1] * 1000, b.s[0] * 1000, b.s[2] * 1000] });
@@ -62,7 +65,7 @@
     // Boden: Plattform (z = 0), Sortierbox (Boden bei −12,5 mm), sonst darunter
     sim.groundAt = (x, y) => {
       if (Math.abs(x) <= 150 && y >= -200 && y <= 400) return 0;
-      if (x >= -250 && x <= -150 && Math.abs(y) <= 50) return -12.5;
+      if (x >= -300 && x <= -150 && Math.abs(y) <= 50) return -12.5;
       return -20;
     };
     // Roboter in die Default-Pose der Übung stellen
@@ -72,11 +75,11 @@
     sim.updateKinematics();
     for (const [k, cb] of Object.entries(CUBES)) {
       if (!S.show[k]) continue;
-      sim.addObject({ size: [20, 20, 20], pos: toSim(cb.c), yaw: 0, color: cb.color, name: cb.name, tag: k });
+      sim.addObject({ size: [CUBE, CUBE, CUBE], pos: toSim(cb.c), yaw: 0, color: cb.color, name: cb.name, tag: k });
     }
     // Sortierbox als Zielbereich (Kontrolle im Panel „Umgebung“)
     const bf = simBox(SCENE.box1_floor);
-    sim.targets.push({ id: sim.nextId++, name: 'Sortierbox', x: bf.c[0], y: bf.c[1], w: 95, h: 95, z: -12, color: '#d9c7a8', accept: '', noLabel: true });
+    sim.targets.push({ id: sim.nextId++, name: 'Sortierbox', x: bf.c[0], y: bf.c[1], w: bf.s[0] - 5, h: bf.s[1] - 5, z: -12, color: '#d9c7a8', accept: '', noLabel: true });
   };
 
   S.setShow = function (key, on) {
@@ -87,7 +90,7 @@
     if (key === 'cube1' || key === 'cube2') {
       const o = sim.objects.find((x) => x.tag === key);
       if (!on && o) sim.removeObject(o);
-      if (on && !o) sim.addObject({ size: [20, 20, 20], pos: toSim(CUBES[key].c), yaw: 0, color: CUBES[key].color, name: CUBES[key].name, tag: key });
+      if (on && !o) sim.addObject({ size: [CUBE, CUBE, CUBE], pos: toSim(CUBES[key].c), yaw: 0, color: CUBES[key].color, name: CUBES[key].name, tag: key });
     }
     if (key === 'regal') {
       sim.statics = sim.statics.filter((s) => s.name !== 'regal');
@@ -141,7 +144,7 @@
     g.add(ef);
     G.efence = ef;
     const sbl = V.label('Sortierbox', '#ffffff', 12);
-    sbl.position.set(...toSim([0, 0.2, 0.1]));
+    sbl.position.set(...toSim([0, 0.225, 0.1]));
     g.add(sbl);
     const rgl = V.label('Regal', '#ffffff', 12);
     rgl.position.set(...toSim([0.4, 0, 0.125]));

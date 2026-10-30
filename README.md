@@ -29,6 +29,7 @@ Einstellungen, Teach-In-Punkte, Zonen und Farbschema werden im Browser gespeiche
 | **Teach-In und Replay** | Posen speichern, anfahren, überschreiben; Replay als PTP oder LIN mit Trapez-, Polynom-3- oder Polynom-5-Profil, mit/ohne Halt; Plots q, q̇, q̈; CSV-Export der geplanten Bahn |
 | **Inverse Kinematik** | Unterbereiche *Inverse Kinematik* (geometrische Lösungen, numerisch per Gradient/Pseudoinverse/DLS, Jacobi-Matrix), *Modell* (Geometrie, DH-Tabelle, T₀ⁱ, Servos, Statik) und *Kalibrierung* (Offsets simulieren, messen, per Least Squares schätzen, kompensieren) |
 | **Förderband-Szenario** | Bandantrieb *Aus / Ein / Automatik*, Lichtschranke, Würfel nachlegen (zufällig oder je Farbe), Roboter-Automatik: Würfel nach Farbe in die Behälter links/rechts sortieren |
+| **Co-Simulation** | Visualisierung einer Simulink-Simulation statt Unreal: Web-Blöcke (Scene Configuration, Robot, Actor) senden Roboter und Akteure live per WebSocket; Akteure einzeln ausblendbar |
 
 ## Szenarien (Panel „Umgebung“)
 
@@ -94,6 +95,29 @@ Per USB oder Bluetooth verbinden und eine Taste drücken – erst dann meldet de
 
 Der Controller vibriert kurz am Gelenkanschlag und an der Arbeitsraumgrenze beim kartesischen Verfahren, kräftiger bei Kollisionen des Arms mit Tisch, Basis oder festen Hindernissen (Regal, Behälter; solange die Kollision andauert, im Takt wiederholt), an der virtuellen Wand (Labor-Szenario) und bei Verletzung der Arbeitsraumüberwachung (z. B. Sperrzone). Die Kollisionsprüfung wirkt auch bei ausgeschalteter Überwachung. Die Karte im Reiter *Manuelle Steuerung* zeigt Verbindung, Modus und Stick-Auslenkung.
 
+## Co-Simulation mit MATLAB/Simulink
+
+Der Reiter **Co-Simulation** ersetzt die Unreal-Visualisierung des Simulink-Modells (`Braccio_CtrlSimMdl`) und läuft damit auch auf macOS und Linux. Im Modell tritt an die Stelle jedes Unreal-Blocks ein gleichartiger Web-Block, der seine Daten per WebSocket an BraccioSim schickt. Benötigt wird MATLAB/Simulink ab R2021a, keine Toolbox.
+
+| Unreal-Block | Web-Block (MATLAB System, Interpreted execution) | Ein-/Ausgänge, Parameter |
+|---|---|---|
+| Simulation 3D Scene Configuration | **Web Scene Configuration** (`BraccioWebScene`) | öffnet den WebSocket-Server `ws://127.0.0.1:8766`, sendet alle `SampleTime` = 20 ms ein Bild |
+| Simulation 3D Robot | **Web Robot** (`BraccioWebRobot`) | Eingang `Config` wie bisher (q1…q5, Greifergelenke); q6 wird aus `braccioGripper` zurückgerechnet |
+| Simulation 3D Actor | **Web Actor** (`BraccioWebActor`) | gleiche Eingänge (`Translation`, `Rotation`, `Color`, `Transparency`) und Parameter (Name, Lage im Unreal-KS, Form/Größe/Farbe aus dem Init-Skript) |
+
+`BraccioWebViz_ersetzen('Braccio_CtrlSimMdl')` tauscht alle Unreal-Blöcke eines Modells automatisch aus und übernimmt Parameter und Verbindungen; danach das Modell unter neuem Namen speichern. BraccioSim zeigt dann Roboter und alle Akteure (Würfel samt Vorrat, Regal, Wand mit Alarmfarbe, Sortierbox, Plattform, Marker, Hilfspunkte) wie zuvor Unreal; einzelne Akteure lassen sich im Reiter zusätzlich ausblenden. Solange Daten eintreffen, führt Simulink den Roboter; Servo-Modell und Bedienung des Simulators ruhen.
+
+| Datei (Ordner `matlab-cosim/`) | Zweck |
+|---|---|
+| `BraccioWebScene.m`, `BraccioWebRobot.m`, `BraccioWebActor.m` | die drei Web-Blöcke |
+| `BraccioWebHub.m` | gemeinsame WebSocket-Verbindung der Blöcke |
+| `BraccioWebViz_ersetzen.m` | ersetzt alle Unreal-Blöcke eines Modells durch Web-Blöcke |
+| `BraccioWebViz_test.m` | prüft die Verbindung ohne Simulink (60 s Testbewegung) |
+
+Ablauf: Dateien in den Modellordner legen → Ini-Skript ausführen → `BraccioWebViz_ersetzen('Braccio_CtrlSimMdl')` → Modell speichern → Simulation starten → in BraccioSim „Verbinden“. Die Web-Blöcke bremsen die Simulation nicht; für eine flüssige Darstellung das Modell auf Echtzeit bremsen (Simulation Pacing). Chrome und Edge fragen beim ersten Verbinden nach dem Zugriff auf das lokale Netzwerk; Safari erlaubt die Verbindung nur, wenn der Simulator lokal läuft (`start.command`).
+
+Nachrichten (JSON, Labor-KS0, die Blöcke rechnen aus dem Unreal-KS um): nach dem Verbinden `{type:'scene', actors:[{n, shape, size, color, alpha, p, r, s}]}`, danach je Bild `{type:'frame', t, q:[q1…q5], q6, actors:[{n, p, r, color, alpha}]}`.
+
 ## Aufzeichnung
 
 - **⏺ Daten (Messdaten):** zeichnet mit 100 Hz (Simulationszeit) Soll- und Istwinkel M1–M6, TCP-Position, ψ, Euler-Winkel Z-Y-X, TCP-Geschwindigkeit, Greiferöffnung, gegriffenes Objekt und Bewegungsart auf. Erneut klicken: CSV wird gespeichert (Trennzeichen „;“).
@@ -147,6 +171,8 @@ js/meshes.js        STL-Geometrie des Roboters
 js/details.js       Zusatzdetails der 3D-Darstellung (Schrauben, Steuerung, Servokabel)
 js/ui.js            Reiter, Werkzeugleiste, HUD, Scope, Tastatur, Farbschema
 js/gamepad.js       Steuerung mit PS4-Controller (Gamepad-API)
+js/cosim.js         Co-Simulation: WebSocket-Empfang der Simulink-Daten
+matlab-cosim/       Web-Blöcke für Simulink (Ersatz der Unreal-Blöcke), Ersetzungs- und Testskript
 js/ui-*.js          Inhalte der Reiter und des Panels „Umgebung“ (ui-env.js)
 ```
 

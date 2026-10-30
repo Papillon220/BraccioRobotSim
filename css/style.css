@@ -192,6 +192,11 @@ a {
 .demo-btn:hover {
   filter: brightness(1.08);
 }
+.demo-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: none;
+}
 .theme-btn {
   margin-bottom: 8px;
   width: 34px;

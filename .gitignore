@@ -5,3 +5,9 @@ desktop.ini
 
 # Lokale Einstellungen von Claude Code
 .claude/settings.local.json
+
+# Lokale MATLAB-Unterlagen (Musterlösungen) – nicht veröffentlichen
+Matlab/
+
+# Lokale MCP-Server (Pfade dieses Rechners)
+.mcp.json

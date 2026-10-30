@@ -14,6 +14,7 @@
     { id: 'traj', title: 'Teach-In und Replay' },
     { id: 'ik', title: 'Inverse Kinematik' },
     { id: 'band', title: 'Förderband-Szenario' },
+    { id: 'cosim', title: 'Co-Simulation' },
   ];
 
   // ------------------------------------------------------------------
@@ -145,7 +146,7 @@
   // ------------------------------------------------------------------
   // Werkzeugleiste über der 3D-Ansicht
   // ------------------------------------------------------------------
-  let elStatus, elTime, elPause, elHold, camSel, recDataBtn, recVideoBtn, recBadge;
+  let elStatus, elTime, elPause, elHold, camSel, recDataBtn, recVideoBtn, recBadge, demoBtn;
   function buildToolbar() {
     const tb = document.getElementById('toolbar');
     // feste Breite: wechselnde Statustexte dürfen die Knöpfe rechts daneben nicht verschieben
@@ -212,7 +213,7 @@
       recDataBtn,
       recVideoBtn
     );
-    const demoBtn = document.getElementById('demoBtn');
+    demoBtn = document.getElementById('demoBtn');
     if (demoBtn) demoBtn.addEventListener('click', () => U.startDemo());
     recBadge = document.getElementById('recBadge');
   }
@@ -292,11 +293,13 @@
     elPause.textContent = sim.paused ? '▶' : '❚❚';
     elPause.classList.toggle('on', sim.paused);
     elHold.classList.toggle('on', sim.hold);
+    if (demoBtn) demoBtn.disabled = !!(BS.cosim && BS.cosim.enabled); // keine Demo während der Co-Simulation
     let cls = 'pill ok',
       txt = 'Manuell';
     if (sim.estop) (cls = 'pill err'), (txt = 'NOT-HALT');
     else if (BS.auto && BS.auto.running) (cls = 'pill run'), (txt = 'Automatik · ' + BS.auto.status);
     else if (sim.owner === 'traj') (cls = 'pill run'), (txt = sim.play ? sim.play.label : 'Trajektorie');
+    else if (BS.cosim && BS.cosim.live) (cls = 'pill run'), (txt = 'Co-Simulation · Simulink');
     if (sim.hold) txt += ' · Bewegung angehalten';
     if (sim.paused) txt += ' · Simulation angehalten';
     elStatus.className = cls + ' status-pill';
@@ -587,6 +590,10 @@
   }
   U.startDemo = function () {
     if (U.demoState) return;
+    if (BS.cosim && BS.cosim.enabled) {
+      BS.toast('Demo nicht möglich, solange die Verbindung zu Simulink aktiv ist (Reiter Co-Simulation → Trennen)', 'warn');
+      return;
+    }
     if (U.fullState) U.toggleFull();
     const sim = BS.sim,
       V = BS.view;
